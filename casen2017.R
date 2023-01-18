@@ -1,10 +1,8 @@
+library(survey)
 library(crosstable)
 library(dplyr)
-library(gt)
-library(survey)
 library(kableExtra)
 library(openxlsx)
-library(rjson)
 
 # Valores en libro de códigos Casen
 areas_ciencia <- c(
@@ -73,52 +71,35 @@ add_cv_variables <- function(data) {
     "9500000-10000000",
     "> 10000000"
   ))
-  data %>% mutate(ocupacion = area_ocupacion_labels, subarea_ocupacion = subarea_ocupacion_labels, region_name = region_labels)
+  data %>% mutate(area_ocupacion = area_ocupacion_labels, subarea_ocupacion = subarea_ocupacion_labels, region_nombre = region_labels)
 }
 
 table_styles <- function(table) {
-  table %>% addmargins() %>% kbl() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+  table %>%
+    addmargins() %>%
+    kbl() %>% # Wrapper function of knitr::kable
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 }
 
 export <- function(table, filename) {
-  table %>% cat(., file  = filename)
+  table %>% cat(., file  = paste0("./tables/", filename))
 }
 
-build_crosstables <- function(data_ciencia) {
+build_crosstables <- function(data_ciencia, crosstables) {
   dsn <- svydesign(id = ~ data_ciencia$folio, weights = ~ data_ciencia$expr, data = data_ciencia)
 
-  # Generar tablas de frecuencia
-  freq_area_region <- svytable(~ data_ciencia$ocupacion + data_ciencia$region_name, dsn)
-  freq_subarea_region <- svytable(~ data_ciencia$subarea_ocupacion + data_ciencia$region_name, dsn)
-  freq_area_salario <- svytable(~ data_ciencia$ocupacion + data_ciencia$rango_salario, dsn)
-  freq_subarea_salario <- svytable(~ data_ciencia$subarea_ocupacion + data_ciencia$rango_salario, dsn)
-  freq_region_salario <- svytable(~ data_ciencia$region_name + data_ciencia$rango_salario, dsn)
-  freq_nivel_educacional_region <- svytable(~ data_ciencia$nivel_educacional + data_ciencia$region_name, dsn)
-  freq_nivel_educacional_salario <- svytable(~ data_ciencia$nivel_educacional + data_ciencia$rango_salario, dsn)
+  for (crosstable in crosstables) {
+    frequency_table <- svytable(crosstable$formula, dsn)
 
-  kable_area_region <- freq_area_region[ciencia_areas_rows,] %>% table_styles()
-  kable_subarea_region <- freq_subarea_region[ciencia_subareas_rows,] %>% table_styles()
-  kable_area_salario <- freq_area_salario[ciencia_areas_rows,] %>% table_styles()
-  kable_subarea_salario <- freq_subarea_salario[ciencia_subareas_rows,] %>% table_styles()
-  kable_region_salario <- freq_region_salario %>% table_styles()
-  kable_nivel_educacional_region <- freq_nivel_educacional_region %>% table_styles()
-  kable_nivel_educacional_salario <- freq_nivel_educacional_salario %>% table_styles()
+    if (is.null(crosstable$rows)) {
+      kable_table <- frequency_table %>% table_styles()
+    } else {
+      kable_table <- frequency_table[crosstable$rows,] %>% table_styles()
+    }
 
-  kable_area_region %>% export("area_region.html")
-  kable_subarea_region %>% export("subarea_region.html")
-  kable_area_salario %>% export("area_salario.html")
-  kable_subarea_salario %>% export("subarea_salario.html")
-  kable_region_salario %>% export("region_salario.html")
-  kable_nivel_educacional_region %>% export("nivel_educacional_region")
-  kable_nivel_educacional_salario %>% export("nivel_educacional_salario.html")
-
-  print(kable_area_region)
-  print(kable_subarea_region)
-  print(kable_area_salario)
-  print(kable_subarea_salario)
-  print(kable_region_salario)
-  print(kable_nivel_educacional_region)
-  print(kable_nivel_educacional_salario)
+    kable_table %>% export(crosstable$filename)
+    print(kable_table)
+  }
 }
 
 # 1. Leer archivo
@@ -128,8 +109,19 @@ data <- haven::read_sav("Casen 2017.sav")
 data_ciencia <- prepare_profesionales_ciencia(data)
 data_ciencia <- add_cv_variables(data_ciencia)
 
-write.csv(data_ciencia, './data_ciencia.csv')
-write.xlsx(data_ciencia, './data_ciencia.xlsx')
+crosstables <- list(
+  list(formula = ~ data_ciencia$area_ocupacion + data_ciencia$region_nombre, rows = ciencia_areas_rows, filename = "area_region.html"),
+  list(formula = ~ data_ciencia$subarea_ocupacion + data_ciencia$region_nombre, rows = ciencia_subareas_rows, filename = "subarea_region.html"),
+  list(formula = ~ data_ciencia$area_ocupacion + data_ciencia$rango_salario, rows = ciencia_areas_rows, filename = "area_salario.html"),
+  list(formula = ~ data_ciencia$subarea_ocupacion + data_ciencia$rango_salario, rows = ciencia_subareas_rows, filename = "subarea_salario.html"),
+  list(formula = ~ data_ciencia$region_nombre + data_ciencia$rango_salario, rows = NULL, filename = "region_salario.html"),
+  list(formula = ~ data_ciencia$nivel_educacional + data_ciencia$region_nombre, rows = NULL, filename = "nivel_educacional_region.html"),
+  list(formula = ~ data_ciencia$nivel_educacional + data_ciencia$rango_salario, rows = NULL, filename = "nivel_educacional_salario.html")
+)
 
 # 3. Generar tablas de frequencia
-build_crosstables(data_ciencia)
+build_crosstables(data_ciencia, crosstables)
+
+# 4. Exportar xlsx y csv
+write.csv(data_ciencia, './data_ciencia.csv')
+write.xlsx(data_ciencia, './data_ciencia.xlsx')
