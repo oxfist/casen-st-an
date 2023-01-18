@@ -33,7 +33,7 @@ educacion_profesional <- c(
 ciencia_areas_rows <- c(6:9)
 ciencia_subareas_rows <- c(12:17, 19:21, 23:24)
 
-prepare_profesionales_ciencia <- function(data) {
+extract_profesionales_ciencia <- function(data) {
   new_data <- data %>%
     mutate(profesional_ciencia = case_when(data$e7_subarea %in% areas_ciencia ~ TRUE)) %>%
     mutate(nivel_educacional = case_when(data$e6a %in% educacion_tecnica ~ 'Técnico',
@@ -43,7 +43,8 @@ prepare_profesionales_ciencia <- function(data) {
 }
 
 add_cv_variables <- function(data) {
-  # Variables de SPSS que tienen valor y etiqueta para usar más fácilmente
+  # Variables de SPSS que tienen etiqueta además de valor para usar más fácilmente
+  # el nombre y no el código numérico.
   area_ocupacion_labels <- haven::as_factor(data$e7_cod_area, levels = "label")
   subarea_ocupacion_labels <- haven::as_factor(data$e7_subarea, levels = "label")
   region_labels <- haven::as_factor(data$region, levels = "label")
@@ -71,7 +72,11 @@ add_cv_variables <- function(data) {
     "9500000-10000000",
     "> 10000000"
   ))
-  data %>% mutate(area_ocupacion = area_ocupacion_labels, subarea_ocupacion = subarea_ocupacion_labels, region_nombre = region_labels)
+
+  data %>% mutate(
+    area_ocupacion = area_ocupacion_labels,
+    subarea_ocupacion = subarea_ocupacion_labels,
+    region_nombre = region_labels)
 }
 
 table_styles <- function(table) {
@@ -106,7 +111,7 @@ build_crosstables <- function(data_ciencia, crosstables) {
 data <- haven::read_sav("Casen 2017.sav")
 
 # 2. Agregar variables necesarias
-data_ciencia <- prepare_profesionales_ciencia(data)
+data_ciencia <- extract_profesionales_ciencia(data)
 data_ciencia <- add_cv_variables(data_ciencia)
 
 crosstables <- list(
