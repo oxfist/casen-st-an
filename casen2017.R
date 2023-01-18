@@ -17,7 +17,7 @@ areas_ciencia <- c(
   72, # Industria y Producción
   73, # Arquitectura y Construcción
   81, # Agricultura
-  82 # Silvicultura
+  82  # Silvicultura
 )
 
 educacion_tecnica <- c(
