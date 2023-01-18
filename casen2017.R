@@ -4,6 +4,7 @@ library(gt)
 library(survey)
 library(kableExtra)
 library(openxlsx)
+library(rjson)
 
 # Valores en libro de códigos Casen
 areas_ciencia <- c(
@@ -33,10 +34,6 @@ educacion_profesional <- c(
 
 ciencia_areas_rows <- c(6:9)
 ciencia_subareas_rows <- c(12:17, 19:21, 23:24)
-
-table_styles <- function(table) {
-  table %>% addmargins() %>% kbl() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
-}
 
 prepare_profesionales_ciencia <- function(data) {
   new_data <- data %>%
@@ -79,6 +76,14 @@ add_cv_variables <- function(data) {
   data %>% mutate(ocupacion = area_ocupacion_labels, subarea_ocupacion = subarea_ocupacion_labels, region_name = region_labels)
 }
 
+table_styles <- function(table) {
+  table %>% addmargins() %>% kbl() %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+}
+
+export <- function(table, filename) {
+  table %>% cat(., file  = filename)
+}
+
 build_crosstables <- function(data_ciencia) {
   dsn <- svydesign(id = ~ data_ciencia$folio, weights = ~ data_ciencia$expr, data = data_ciencia)
 
@@ -88,18 +93,32 @@ build_crosstables <- function(data_ciencia) {
   freq_area_salario <- svytable(~ data_ciencia$ocupacion + data_ciencia$rango_salario, dsn)
   freq_subarea_salario <- svytable(~ data_ciencia$subarea_ocupacion + data_ciencia$rango_salario, dsn)
   freq_region_salario <- svytable(~ data_ciencia$region_name + data_ciencia$rango_salario, dsn)
+  freq_nivel_educacional_region <- svytable(~ data_ciencia$nivel_educacional + data_ciencia$region_name, dsn)
+  freq_nivel_educacional_salario <- svytable(~ data_ciencia$nivel_educacional + data_ciencia$rango_salario, dsn)
 
   kable_area_region <- freq_area_region[ciencia_areas_rows,] %>% table_styles()
   kable_subarea_region <- freq_subarea_region[ciencia_subareas_rows,] %>% table_styles()
   kable_area_salario <- freq_area_salario[ciencia_areas_rows,] %>% table_styles()
   kable_subarea_salario <- freq_subarea_salario[ciencia_subareas_rows,] %>% table_styles()
   kable_region_salario <- freq_region_salario %>% table_styles()
+  kable_nivel_educacional_region <- freq_nivel_educacional_region %>% table_styles()
+  kable_nivel_educacional_salario <- freq_nivel_educacional_salario %>% table_styles()
+
+  kable_area_region %>% export("area_region.html")
+  kable_subarea_region %>% export("subarea_region.html")
+  kable_area_salario %>% export("area_salario.html")
+  kable_subarea_salario %>% export("subarea_salario.html")
+  kable_region_salario %>% export("region_salario.html")
+  kable_nivel_educacional_region %>% export("nivel_educacional_region")
+  kable_nivel_educacional_salario %>% export("nivel_educacional_salario.html")
 
   print(kable_area_region)
   print(kable_subarea_region)
   print(kable_area_salario)
   print(kable_subarea_salario)
   print(kable_region_salario)
+  print(kable_nivel_educacional_region)
+  print(kable_nivel_educacional_salario)
 }
 
 # 1. Leer archivo
@@ -114,4 +133,3 @@ write.xlsx(data_ciencia, './data_ciencia.xlsx')
 
 # 3. Generar tablas de frequencia
 build_crosstables(data_ciencia)
-
