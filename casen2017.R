@@ -51,10 +51,11 @@ ciencia_areas_rows <- c(6:9)
 ciencia_subareas_rows <- c(12:17, 19:21, 23:24)
 
 add_cv_variables <- function(data) {
-  # Variables de SPSS que tienen valor y además etiqueta. Se extrae la etiqueta para usar más
-  # fácilmente el nombre y no el código numérico.
-  area_ocupacion_labels <- haven::as_factor(data$e7_cod_area, levels = "label")
-  subarea_ocupacion_labels <- haven::as_factor(data$e7_subarea, levels = "label")
+  # Las siguientes son variables de SPSS que tienen valor y además etiqueta.
+  # Se extrae la etiqueta para usar más fácilmente el nombre y no el código
+  # numérico.
+  area_estudio_labels <- haven::as_factor(data$e7_cod_area, levels = "label")
+  subarea_estudio_labels <- haven::as_factor(data$e7_subarea, levels = "label")
   region_labels <- haven::as_factor(data$region, levels = "label")
   industria_labels <- haven::as_factor(data$rama1, levels = "label")
   tipo_jornada_labels <- haven::as_factor(data$o18, levels = "label")
@@ -90,8 +91,8 @@ add_cv_variables <- function(data) {
 
   data %>%
     mutate(
-      area_ocupacion = area_ocupacion_labels,
-      subarea_ocupacion = subarea_ocupacion_labels,
+      area_estudio = area_estudio_labels,
+      subarea_estudio = subarea_estudio_labels,
       region_nombre = region_labels,
       industria = industria_labels
     ) %>%
@@ -161,22 +162,22 @@ data <- haven::read_sav("Casen 2017.sav")
 data_ciencia <- add_cv_variables(data)
 
 # TODO: borrar
-ggplot(data_ciencia, aes(x = area_ocupacion, weight = expr, color = area_ocupacion)) +
+ggplot(data_ciencia, aes(x = area_estudio, weight = expr, color = area_estudio)) +
   geom_histogram()
 
 data_ciencia <- extract_profesionales_ciencia(data_ciencia)
 
 crosstables <- list(
-  list(formula = ~ data_ciencia$area_ocupacion + data_ciencia$region_nombre, rows = ciencia_areas_rows, filename = "area_region.html"),
-  list(formula = ~ data_ciencia$subarea_ocupacion + data_ciencia$region_nombre, rows = ciencia_subareas_rows, filename = "subarea_region.html"),
+  list(formula = ~ data_ciencia$area_estudio + data_ciencia$region_nombre, rows = ciencia_areas_rows, filename = "area_region.html"),
+  list(formula = ~ data_ciencia$subarea_estudio + data_ciencia$region_nombre, rows = ciencia_subareas_rows, filename = "subarea_region.html"),
   list(formula = ~ data_ciencia$nivel_educacional + data_ciencia$region_nombre, rows = NULL, filename = "nivel_educacional_region.html"),
   list(formula = ~ data_ciencia$industria + data_ciencia$region_nombre, rows = NULL, filename = "industria_region.html"),
-  list(formula = ~ data_ciencia$area_ocupacion + data_ciencia$sector, rows = ciencia_areas_rows, filename = "area_sector.html"),
-  list(formula = ~ data_ciencia$subarea_ocupacion + data_ciencia$tipo_contrato, rows = ciencia_subareas_rows, filename = "subarea_tipo_contrato.html")
+  list(formula = ~ data_ciencia$area_estudio + data_ciencia$sector, rows = ciencia_areas_rows, filename = "area_sector.html"),
+  list(formula = ~ data_ciencia$subarea_estudio + data_ciencia$tipo_contrato, rows = ciencia_subareas_rows, filename = "subarea_tipo_contrato.html")
 )
 
 crosstables_total <- list(
-  list(formula = ~ data_ciencia$area_ocupacion + data_ciencia$region_nombre, rows = NULL, filename = "area_region_total.html")
+  list(formula = ~ data_ciencia$area_estudio + data_ciencia$region_nombre, rows = NULL, filename = "area_region_total.html")
 )
 
 # 3. Generar tablas de frequencia
@@ -186,14 +187,14 @@ build_crosstables(data, crosstables_total)
 # data_ciencia_cleaned <- data_ciencia %>% filter(!is.na(salario))
 #
 # salarios_por_region <- data_ciencia_cleaned %>% group_by(region_nombre) %>% summarize(salarios = list(salario))
-# salarios_por_area <- data_ciencia_cleaned %>% group_by(area_ocupacion) %>% summarize(salarios = list(salario))
-# salarios_por_subarea <- data_ciencia_cleaned %>% group_by(subarea_ocupacion) %>% summarize(salarios = list(salario))
+# salarios_por_area <- data_ciencia_cleaned %>% group_by(area_estudio) %>% summarize(salarios = list(salario))
+# salarios_por_subarea <- data_ciencia_cleaned %>% group_by(subarea_estudio) %>% summarize(salarios = list(salario))
 # salarios_por_nivel_educacional <- data_ciencia_cleaned %>% group_by(nivel_educacional) %>% summarize(salarios = list(salario))
 # salarios_por_industria <- data_ciencia_cleaned %>% group_by(industria) %>% summarize(salarios = list(salario))
 # salarios_por_sector <- data_ciencia_cleaned %>% group_by(sector) %>% summarize(salarios = list(salario))
 
 # TODO: extraer a una función similar a build_crosstables
-ggplot(data_ciencia, aes(x = subarea_ocupacion, y = salario, weight = expr, fill = subarea_ocupacion)) +
+ggplot(data_ciencia, aes(x = subarea_estudio, y = salario, weight = expr, fill = subarea_estudio)) +
   geom_boxplot() +
   scale_shape_manual(name = "", labels = c("Mediana", "Promedio"), values = c(16, 23)) +
   stat_summary(fun.y = "mean", geom = "point", shape = 23, size = 3) +
