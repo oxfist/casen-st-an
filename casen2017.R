@@ -64,31 +64,6 @@ add_cv_variables <- function(data) {
   data$salario[data$salario == 99] <- NA # 99 = No sabe
   data$salario[data$salario == 0] <- NA
 
-  # TODO: borrar, ya no es necesario
-  data$rango_salario <- cut(data$salario, c(seq(0, 10000000, 500000), Inf), labels = c(
-    "< 500000",
-    "500000-1000000",
-    "1000000-1500000",
-    "1500000-2000000",
-    "2000000-2500000",
-    "2500000-3000000",
-    "3000000-3500000",
-    "3500000-4000000",
-    "4000000-4500000",
-    "4500000-5000000",
-    "5000000-5500000",
-    "5500000-6000000",
-    "6000000-6500000",
-    "6500000-7000000",
-    "7000000-7500000",
-    "7500000-8000000",
-    "8000000-8500000",
-    "8500000-9000000",
-    "9000000-9500000",
-    "9500000-10000000",
-    "> 10000000"
-  ))
-
   data %>%
     mutate(
       area_estudio = area_estudio_labels,
@@ -160,10 +135,7 @@ data <- haven::read_sav("Casen 2017.sav")
 
 # 2. Agregar variables necesarias
 data_ciencia <- add_cv_variables(data)
-
-# TODO: borrar
-ggplot(data_ciencia, aes(x = area_estudio, weight = expr, color = area_estudio)) +
-  geom_histogram()
+data_ciencia_total <- data_ciencia
 
 data_ciencia <- extract_profesionales_ciencia(data_ciencia)
 
@@ -193,7 +165,11 @@ build_crosstables(data, crosstables_total)
 # salarios_por_industria <- data_ciencia_cleaned %>% group_by(industria) %>% summarize(salarios = list(salario))
 # salarios_por_sector <- data_ciencia_cleaned %>% group_by(sector) %>% summarize(salarios = list(salario))
 
+# 4. Construir gráficos
 # TODO: extraer a una función similar a build_crosstables
+ggplot(data_ciencia, aes(x = area_estudio, weight = expr, fill = area_estudio)) +
+  geom_bar()
+
 ggplot(data_ciencia, aes(x = subarea_estudio, y = salario, weight = expr, fill = subarea_estudio)) +
   geom_boxplot() +
   scale_shape_manual(name = "", labels = c("Mediana", "Promedio"), values = c(16, 23)) +
@@ -202,6 +178,6 @@ ggplot(data_ciencia, aes(x = subarea_estudio, y = salario, weight = expr, fill =
   easy_rotate_x_labels(angle = 70, side = "right") +
   labs(x = "Subárea", y = "Salario", subtitle = "Distribución Subárea / Salario")
 
-# 4. Exportar xlsx y csv
-write.csv(data_ciencia, './data_ciencia.csv')
-write.xlsx(data_ciencia, './data_ciencia.xlsx')
+# 5. Exportar a xlsx y csv
+# write.csv(data_ciencia, './data_ciencia.csv')
+# write.xlsx(data_ciencia, './data_ciencia.xlsx')
